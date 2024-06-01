@@ -9,38 +9,17 @@ use actix_web::web::{Bytes, get};
 use serde::{Deserialize, Serialize};
 use log::{error, info};
 use uuid::uuid;
-use crate::contact_book::SendMessageStatus::{Failed, Pending};
+use crate::model::{GetMessagesRequest, Message, MessageIO, SendMessageRequest, SendMessageResponse};
+use crate::model::Status::{Failed, Pending};
+use crate::store::MessageStore;
+use crate::user_store::UserStore;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct GetMessagesRequest {
-    user_id: String,
-}
 
 #[post("/messages")]
-async fn get_messages(req_body: GetMessagesRequest) -> impl Responder {
+pub async fn get_messages(req_body: web::Json<GetMessagesRequest>) -> impl Responder {
     HttpResponse::Ok().body("")
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct SendMessageRequest {
-    from_user_id: String,
-    to_user_id: String,
-    message: String,
-}
-
-#[derive(Clone, Debug)]
-enum SendMessageStatus {
-    Sent,
-    Pending,
-    Failed
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Siz)]
-struct SendMessageResponse {
-    status: SendMessageStatus,
-    message: String,
-    message_id: String,
-}
 
 impl Responder for SendMessageResponse {
     type Body = BoxBody;
@@ -55,42 +34,15 @@ impl Responder for SendMessageResponse {
     }
 }
 
-struct UserInfo {
-    name: String,
-
-}
-
-enum MessageIO {
-    Inbound,
-    Outbound
-}
-
-struct Message {
-    io: MessageIO,
-    body: String
-}
-
-struct MessageIOPair {
-    inbound: HashMap<String, Message>,
-    outbound: HashMap<String, Message>
-}
-
-struct UserStore {
-    users: Mutex<HashMap<String, UserInfo>>
-}
-
-struct MessageStore {
-    messages: Mutex<HashMap<UserInfo, HashMap<String, Message>>>,
-}
 
 #[put("/message")]
-async fn echo(req_body: SendMessageRequest, message_store: web::Data<MessageStore>, user_store: web::Data<UserStore>) -> impl Responder {
-    info("Send message request received: ${?:}", req_body.clone());
+pub async fn send_message(req_body: web::Json<SendMessageRequest>, message_store: web::Data<MessageStore>, user_store: web::Data<UserStore>) -> HttpResponse {
+    println!("Send message request received: ${:?}", req_body.clone());
     let users = user_store.users.lock().unwrap();
-    let from_user = users.get(&req_body.from_user_id);
+    let from_user = users.get(&req_body.clone().from_user_id);
 
     if from_user.is_none() {
-        error!("from_user not found for send message request: ${:?}", req_body);
+        println!("from_user not found for send message request: ${:?}", req_body);
         let response = SendMessageResponse {
             status: Failed,
             message: String::from("Invalid sender address"),
@@ -104,9 +56,9 @@ async fn echo(req_body: SendMessageRequest, message_store: web::Data<MessageStor
             .body(body)
     }
 
-    let to_user = users.get(&req_body.to_user_id);
+    let mut to_user = &users.get(&req_body.to_user_id);
     if to_user.is_none() {
-        error!("to_user not found for send message request: ${:?}", req_body);
+        println!("to_user not found for send message request: ${:?}", req_body);
         let response = SendMessageResponse {
             status: Failed,
             message: String::from("Invalid recipient specified"),
@@ -121,14 +73,25 @@ async fn echo(req_body: SendMessageRequest, message_store: web::Data<MessageStor
     }
 
     let message_id = uuid::Uuid::new_v4().to_string();
-    let messages = message_store.messages.lock().unwrap();
-    
+    let mut messages = message_store.messages.lock().unwrap();
+    let message = &req_body.message;
+    messages.get_mut(&to_user.unwrap()).unwrap().insert(message_id.clone(), Message {
+        io: MessageIO::Inbound,
+        body: message.clone(),
+    });
+
+    // messages.get(&from_user.unwrap()).unwrap().insert(message_id.clone(), Message {
+    //     io: MessageIO::Outbound,
+    //     body: message.clone(),
+    // });
     let response = SendMessageResponse {
         status: Pending,
         message: String::from("Message pending"),
         message_id,
     };
     let body = serde_json::to_string(&response).unwrap();
+
+    println!("Successfully stored message, sending ok response");
     return HttpResponse::Ok()
         .content_type(ContentType::json())
         .body(body)
