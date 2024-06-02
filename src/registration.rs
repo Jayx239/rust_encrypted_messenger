@@ -63,10 +63,13 @@ mod tests {
     use crate::registration::{register_user, RegisterUserRequest};
     use crate::store::MessageStore;
     use crate::user_store::UserStore;
-
-
+    use actix_web::test;
+    use actix_web::http::header::ContentType;
+    use actix_web::App;
+    use actix_web::web::Data;
+    
     #[test]
-    fn it_registers_a_user() {
+    async fn it_registers_a_user() {
         let user_store = UserStore::new();
         let message_store = MessageStore::new();
         let request = RegisterUserRequest {
@@ -78,14 +81,21 @@ mod tests {
     }
 
     #[actix_web::test]
-    async fn test_index_get() {
-        let app = test::init_service(App::new().service(index)).await;
+    async fn test_register_user() {
+        let user_store = Data::new(UserStore::new());
+        let message_store = Data::new(MessageStore::new());
+        let app = test::init_service(App::new().service(register_user)
+        .app_data(user_store.clone())
+        .app_data(message_store.clone())).await;
+        let request = RegisterUserRequest {             user_id: String::from("jason"),};
         let req = test::TestRequest::post()
             .insert_header(ContentType::json())
             .uri("/register")
-            .body("{\"userId\": \"jason\"}")
+            .set_json(request)
             .to_request();
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
+        assert!(user_store.clone().users.lock().unwrap().get(&String::from("jason")).is_some());
+        println!("{:?}", user_store.clone().users.lock().unwrap().get(&String::from("jason")))
     }
 }

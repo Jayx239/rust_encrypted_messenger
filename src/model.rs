@@ -2,16 +2,16 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 
-#[derive(Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct UserInfo {
     pub name: String,
 }
-
+#[derive(Serialize, Deserialize)]
 pub enum MessageIO {
     Inbound,
     Outbound
 }
-
+#[derive(Serialize, Deserialize)]
 pub struct Message {
     pub io: MessageIO,
     pub body: String
@@ -49,5 +49,6 @@ pub struct SendMessageResponse {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GetMessagesRequest {
+    #[serde(alias="userId")]
     pub user_id: String,
 }

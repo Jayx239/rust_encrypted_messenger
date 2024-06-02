@@ -16,8 +16,13 @@ use crate::user_store::UserStore;
 
 
 #[post("/messages")]
-pub async fn get_messages(req_body: web::Json<GetMessagesRequest>) -> impl Responder {
-    HttpResponse::Ok().body("")
+pub async fn get_messages(req_body: web::Json<GetMessagesRequest>, message_store: web::Data<MessageStore>, user_store: web::Data<UserStore>) -> impl Responder {
+    let user_id = req_body.user_id.clone();
+    let user_data = user_store.users.lock().unwrap().get(&user_id.clone()).unwrap().clone();
+    let messages = message_store.messages.lock().unwrap();
+    let messages = messages.get(&user_data.clone()).unwrap();
+    let message = serde_json::to_string(&messages.clone().get("Jason").unwrap()).unwrap();
+    HttpResponse::Ok().body(message)
 }
 
 
