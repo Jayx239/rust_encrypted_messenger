@@ -1,19 +1,32 @@
 use std::collections::HashMap;
-use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Serialize, Deserialize,Debug, Hash, Eq, PartialEq, Clone)]
 pub struct UserInfo {
-    pub name: String,
+    #[serde(alias="userId")]
+    pub user_id: Option<String>,
+    #[serde(alias="userName")]
+    pub user_name: String,
 }
-#[derive(Serialize, Deserialize)]
+
+#[derive(Serialize, Deserialize, Clone)]
 pub enum MessageIO {
     Inbound,
     Outbound
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Message {
+    #[serde(alias="sentAt")]
+    pub sent_at: u64,
+    #[serde(alias="toUserId")]
+    pub to_user_id: String,
+    #[serde(alias="fromUserId")]
+    pub from_user_id: String,
+    #[serde(alias="messageId")]
+    pub message_id: String,
+    #[serde(alias="messageIO")]
     pub io: MessageIO,
+    #[serde(alias="body")]
     pub body: String
 }
 
@@ -44,11 +57,20 @@ pub enum Status {
 pub struct SendMessageResponse {
     pub status: Status,
     pub message: String,
+    #[serde(alias="messageId")]
     pub message_id: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GetMessagesRequest {
     #[serde(alias="userId")]
     pub user_id: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GetMessageRequest {
+    #[serde(alias="userId")]
+    pub user_id: String,
+    #[serde(alias="messageId")]
+    pub message_id: String,
 }

@@ -2,28 +2,34 @@ use std::collections::HashMap;
 use actix_web::{HttpResponse, post, put, web};
 use actix_web::http::header::ContentType;
 use serde::{Deserialize, Serialize};
-use crate::model::{SendMessageRequest, SendMessageResponse, Status, UserInfo};
-use crate::model::Status::Failed;
-use crate::store::MessageStore;
-use crate::user_store::UserStore;
+use super::model::{UserInfo};
+use super::message_store::MessageStore;
+use super::user_store::UserStore;
 
 #[derive(Debug, Deserialize, Serialize)]
 struct RegisterUserRequest {
-    #[serde(alias="userId")]
-    pub user_id: String
+    #[serde(alias="userName")]
+    pub user_name: String
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 struct RegisterUserResponse {
-    status: String,
-    message: String,
+    pub user_id: String,
+    pub user_name: String,
+    pub status: String,
+    pub message: String,
 }
 
 #[post("/register")]
 pub async fn register_user(req_body: web::Json<RegisterUserRequest>, message_store: web::Data<MessageStore>, user_store: web::Data<UserStore>) -> HttpResponse {
-    let user_id = req_body.user_id.clone();
-    if user_store.users.lock().unwrap().contains_key(&user_id.clone()) {
+    println!("Registering user with req_body");
+    println!("Registering user with req_body {:?}", req_body.user_name.clone());
+    let user_name = req_body.user_name.clone();
+    // if user_store.users.lock().unwrap().contains_key(&user_id.clone()) {
+    if user_store.has_user_name(user_name.clone()) {
         let response = RegisterUserResponse {
+            user_id: "".to_string(),
+            user_name: "".to_string(),
             status: String::from("Failed"),
             message: String::from("Username already taken"),
         };
@@ -36,16 +42,19 @@ pub async fn register_user(req_body: web::Json<RegisterUserRequest>, message_sto
     }
 
     let user_info = UserInfo {
-        name: user_id.clone()
+        user_id: None,
+        user_name: user_name.clone()
     };
 
-    user_store.users.lock().unwrap().insert(user_id.clone(), user_info.clone());
+    let registered_user_info= user_store.create_user(user_info.clone());
 
-    message_store.messages.lock().unwrap().insert(user_info.clone(), HashMap::new());
-
+    // message_store.messages.lock().unwrap().insert(user_info.clone(), HashMap::new());
+    message_store.initialize_message_store_for_user(registered_user_info.clone()).unwrap();
     // println!("{:?}",message_store.messages.lock().unwrap());
 
     let response = RegisterUserResponse {
+        user_name: registered_user_info.clone().user_name.clone(),
+        user_id: registered_user_info.user_id.unwrap().clone(),
         status: String::from("Success"),
         message: String::from("Username registered"),
     };
@@ -61,7 +70,7 @@ pub async fn register_user(req_body: web::Json<RegisterUserRequest>, message_sto
 #[cfg(test)]
 mod tests {
     use crate::registration::{register_user, RegisterUserRequest};
-    use crate::store::MessageStore;
+    use crate::message_store::MessageStore;
     use crate::user_store::UserStore;
     use actix_web::test;
     use actix_web::http::header::ContentType;
@@ -73,7 +82,7 @@ mod tests {
         let user_store = UserStore::new();
         let message_store = MessageStore::new();
         let request = RegisterUserRequest {
-            user_id: String::from("jason"),
+            user_name: String::from("jason"),
         };
         // let response = register_user(request,
         //               user_store,
