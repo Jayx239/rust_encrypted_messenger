@@ -72,7 +72,7 @@ impl<T: Clone + GetMessageId> MessageStore<T> {
         return Ok(())
     }
 
-    pub fn remove_messages(&self, user_info: UserInfo, messages_to_remove: HashMap<String, Message>) {
+    pub fn remove_messages(&self, user_info: UserInfo, messages_to_remove: HashMap<String, T>) {
         let id = user_info.user_id.unwrap();
         let mut messages = self.messages.lock().unwrap();
         let mut existing_messages = messages.get(&id).unwrap().to_owned();//self.messages.lock().unwrap().get(&user_info.clone()).unwrap().to_owned();
