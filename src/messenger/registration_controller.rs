@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use actix_web::{HttpResponse, post, put, web};
 use actix_web::http::header::ContentType;
 use serde::{Deserialize, Serialize};
-use super::model::{UserInfo};
+use super::model::{Message, UserInfo};
 use super::message_store::MessageStore;
 use super::user_store::UserStore;
 
@@ -21,7 +21,7 @@ struct RegisterUserResponse {
 }
 
 #[post("/register")]
-pub async fn register_user(req_body: web::Json<RegisterUserRequest>, message_store: web::Data<MessageStore>, user_store: web::Data<UserStore>) -> HttpResponse {
+pub async fn register_user(req_body: web::Json<RegisterUserRequest>, message_store: web::Data<MessageStore<Message>>, user_store: web::Data<UserStore>) -> HttpResponse {
     println!("Registering user with req_body");
     println!("Registering user with req_body {:?}", req_body.user_name.clone());
     let user_name = req_body.user_name.clone();
@@ -69,14 +69,14 @@ pub async fn register_user(req_body: web::Json<RegisterUserRequest>, message_sto
 
 #[cfg(test)]
 mod tests {
-    use crate::registration::{register_user, RegisterUserRequest};
-    use crate::message_store::MessageStore;
-    use crate::user_store::UserStore;
     use actix_web::test;
     use actix_web::http::header::ContentType;
     use actix_web::App;
     use actix_web::web::Data;
-    
+    use crate::messenger::message_store::MessageStore;
+    use crate::messenger::registration_controller::RegisterUserRequest;
+    use crate::messenger::user_store::UserStore;
+
     #[test]
     async fn it_registers_a_user() {
         let user_store = UserStore::new();

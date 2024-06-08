@@ -1,27 +1,31 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
-use super::model::{Message, UserInfo};
+use super::model::{GetMessageId, Message, UserInfo};
 
 
-pub struct MessageStore {
+/**
+    Message Store
+    <T> - Message model
+*/
+pub struct MessageStore<T> {
     /**
         Key: user_id,
         Value: {
             message_id,
-            Message
+            <T> Message
         }
     **/
-    messages: Mutex<HashMap<String, HashMap<String, Message>>>,
+    messages: Mutex<HashMap<String, HashMap<String, T>>>,
 }
 
-impl MessageStore {
-    pub fn new() -> MessageStore {
+impl<T: Clone + GetMessageId> MessageStore<T> {
+    pub fn new() -> MessageStore<T> {
         return MessageStore {
             messages: Mutex::from(HashMap::new())
         }
     }
 
-    pub fn get_messages(&self, user_info: UserInfo) -> Result<HashMap<String, Message>, String> {
+    pub fn get_messages(&self, user_info: UserInfo) -> Result<HashMap<String, T>, String> {
         let id = user_info.user_id.clone().unwrap();
         let message_store = self.messages.lock().unwrap();
         let messages = message_store.get(&id);
@@ -34,10 +38,10 @@ impl MessageStore {
             return Err("Failed to get messages due to missing messages map".to_string())
         }
 
-        return Ok(messages.unwrap().clone());
+        return Ok(messages.unwrap().clone().into());
     }
 
-    pub fn put_message(&self, user_info: UserInfo, message: Message) -> Result<(), String> {
+    pub fn put_message(&self, user_info: UserInfo, message: T) -> Result<(), String> {
         let id = user_info.user_id.clone().unwrap();
         let mut all_messages = self.messages.lock().unwrap();
 
@@ -48,7 +52,7 @@ impl MessageStore {
         }
 
         let mut messages = all_messages.get(&id).unwrap().clone();
-        messages.insert(message.clone().message_id, message);
+        messages.insert(message.clone().get_message_id(), message);
 
         // self.messages.lock().unwrap().insert(user_info, messages);
         all_messages.insert(id, messages);

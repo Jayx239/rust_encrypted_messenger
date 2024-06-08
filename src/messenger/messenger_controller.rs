@@ -16,7 +16,7 @@ use super::message_store::MessageStore;
 use super::user_store::UserStore;
 
 #[post("/messages")]
-pub async fn get_messages(req_body: web::Json<GetMessagesRequest>, message_store: web::Data<MessageStore>, user_store: web::Data<UserStore>) -> impl Responder {
+pub async fn get_messages(req_body: web::Json<GetMessagesRequest>, message_store: web::Data<MessageStore<Message>>, user_store: web::Data<UserStore>) -> impl Responder {
     let user_id = req_body.user_id.clone();
     let user_data = user_store.get_user_info(user_id.clone()).unwrap().clone();
     // let messages = message_store.messages.lock().unwrap();
@@ -27,7 +27,7 @@ pub async fn get_messages(req_body: web::Json<GetMessagesRequest>, message_store
 }
 
 #[post("/message")]
-pub async fn get_message(req_body: web::Json<GetMessageRequest>, message_store: web::Data<MessageStore>, user_store: web::Data<UserStore>) -> impl Responder {
+pub async fn get_message(req_body: web::Json<GetMessageRequest>, message_store: web::Data<MessageStore<Message>>, user_store: web::Data<UserStore>) -> impl Responder {
     let user_id = req_body.user_id.clone();
     let message_id = req_body.message_id.clone();
 
@@ -54,7 +54,7 @@ impl Responder for SendMessageResponse {
 
 
 #[put("/message")]
-pub async fn send_message(req_body: web::Json<SendMessageRequest>, mut message_store: web::Data<MessageStore>, user_store: web::Data<UserStore>) -> HttpResponse {
+pub async fn send_message(req_body: web::Json<SendMessageRequest>, mut message_store: web::Data<MessageStore<Message>>, user_store: web::Data<UserStore>) -> HttpResponse {
     println!("Send message request received: ${:?}", req_body.clone());
     // let users = user_store.users.lock().unwrap();
     let from_user = user_store.get_user_info(req_body.clone().from_user_id);

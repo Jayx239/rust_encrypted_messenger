@@ -14,6 +14,7 @@ pub enum MessageIO {
     Inbound,
     Outbound
 }
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Message {
     #[serde(alias="sentAt")]
@@ -28,6 +29,16 @@ pub struct Message {
     pub io: MessageIO,
     #[serde(alias="body")]
     pub body: String
+}
+
+impl GetMessageId for Message {
+    fn get_message_id(self) -> String {
+        return self.message_id.clone()
+    }
+}
+
+pub trait GetMessageId {
+    fn get_message_id(self) -> String;
 }
 
 pub struct MessageIOPair {
