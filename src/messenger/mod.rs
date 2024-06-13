@@ -12,3 +12,4 @@ pub mod encrypted_messenger_controller;
 pub mod encrypted_model;
 
 pub mod encrypted_registration_controller;
+pub mod traits;

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
-use super::model::{GetMessageId, Message, UserInfo};
+use crate::messenger::traits::GetMessageId;
+use super::model::{UserInfo};
 
 
 /**

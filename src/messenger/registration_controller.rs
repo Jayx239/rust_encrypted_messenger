@@ -9,12 +9,17 @@ use super::user_store::UserStore;
 #[derive(Debug, Deserialize, Serialize)]
 struct RegisterUserRequest {
     #[serde(alias="userName")]
+    #[serde(alias="userName")]
     pub user_name: String
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 struct RegisterUserResponse {
+    #[serde(alias="userId")]
+    #[serde(rename(serialize="userId", deserialize="userId"))]
     pub user_id: String,
+    #[serde(alias="userName")]
+    #[serde(rename(serialize="userName", deserialize="userName"))]
     pub user_name: String,
     pub status: String,
     pub message: String,

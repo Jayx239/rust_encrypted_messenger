@@ -1,11 +1,14 @@
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use crate::messenger::traits::GetMessageId;
 
 #[derive(Serialize, Deserialize,Debug, Hash, Eq, PartialEq, Clone)]
 pub struct UserInfo {
     #[serde(alias="userId")]
+    #[serde(rename(serialize="userId"))]
     pub user_id: Option<String>,
     #[serde(alias="userName")]
+    #[serde(rename(serialize="userName"))]
     pub user_name: String,
 }
 
@@ -37,9 +40,7 @@ impl GetMessageId for Message {
     }
 }
 
-pub trait GetMessageId {
-    fn get_message_id(self) -> String;
-}
+
 
 pub struct MessageIOPair {
     pub inbound: HashMap<String, Message>,

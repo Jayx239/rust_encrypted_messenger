@@ -14,9 +14,9 @@ pub async fn get_messages(req_body: web::Json<GetMessagesRequest>, message_store
     let user_data = user_store.get_user_info(user_id.clone()).unwrap().clone();
     // let messages = message_store.messages.lock().unwrap();
     let messages = message_store.get_messages(user_data.clone()).unwrap();
-    let message = serde_json::to_vec(&messages).unwrap();
+    let response_body = serde_json::to_vec(&messages).unwrap();
     message_store.remove_messages(user_data, messages);
-    HttpResponse::Ok().body(message)
+    HttpResponse::Ok().body(response_body)
 }
 
 #[post("/message")]
@@ -77,6 +77,7 @@ pub async fn send_message(req_body: web::Json<SendMessageRequest>, mut message_s
         message_id: message_id.clone(),
         io: MessageIO::Inbound,
         body: message.clone(),
+        iv: req_body.iv.clone()
     }).unwrap();
     // let mut messages = message_store.messages.lock().unwrap();
     // let message = &req_body.message;
